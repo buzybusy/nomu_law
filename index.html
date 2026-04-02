@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d1f3c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="노무사 법령">
+<title>공인노무사 법령 조문 검색</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#0d1f3c; --navy2:#162d52; --navy3:#1e3f72;
+  --gold:#c9a84c; --gold2:#e8c97a;
+  --cream:#f5f0e8; --cream2:#ede6d8;
+  --td:#1a1a2e; --tm:#444466; --tl:#7a7a99;
+  --white:#fff;
+  --sb: env(safe-area-inset-bottom,0px);
+  --st: env(safe-area-inset-top,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--td)}
+
+/* ── APP SHELL ── */
+.app{display:flex;flex-direction:column;height:100%;padding-top:var(--st);padding-bottom:var(--sb)}
+
+/* ── HEADER ── */
+header{background:var(--navy);flex-shrink:0}
+.hdr-main{padding:.7rem 1rem .5rem;display:flex;align-items:center;gap:.6rem}
+.hdr-back{background:none;border:none;color:rgba(255,255,255,.7);font-size:1.3rem;cursor:pointer;padding:.2rem .4rem;display:none}
+.hdr-back.show{display:block}
+.hdr-title{font-family:'Noto Serif KR',serif;font-size:1rem;font-weight:700;color:var(--gold2);flex:1;line-height:1.3}
+.hdr-sub{font-size:.7rem;color:rgba(255,255,255,.5);font-family:'Noto Sans KR',sans-serif;font-weight:300}
+
+/* ── SEARCH ── */
+.search-wrap{background:var(--navy);padding:.4rem 1rem .7rem;flex-shrink:0}
+.search-inner{position:relative;background:rgba(255,255,255,.1);border:1.5px solid rgba(201,168,76,.4);border-radius:10px;display:flex;align-items:center}
+.search-inner input{flex:1;background:none;border:none;outline:none;padding:.6rem .7rem .6rem 2.1rem;color:#fff;font-size:.88rem;font-family:'Noto Sans KR',sans-serif}
+.search-inner input::placeholder{color:rgba(255,255,255,.4)}
+.si{position:absolute;left:.65rem;font-size:.9rem;opacity:.6;pointer-events:none}
+.sx{padding:.6rem .7rem;color:rgba(255,255,255,.4);cursor:pointer;display:none}
+
+/* ── FILTER ── */
+.filter-row{background:var(--white);border-bottom:1px solid var(--cream2);padding:.5rem .8rem;display:flex;gap:.35rem;overflow-x:auto;flex-shrink:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.filter-row::-webkit-scrollbar{display:none}
+.chip{background:var(--cream);color:var(--tm);border:1px solid var(--cream2);border-radius:14px;padding:.25rem .7rem;font-size:.73rem;white-space:nowrap;cursor:pointer;flex-shrink:0;transition:all .15s}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ── PAGES ── */
+.page{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;flex-direction:column}
+.page.on{display:flex}
+
+/* ── LAW LIST ── */
+.list-wrap{padding:.7rem .85rem 1rem}
+.count{font-size:.72rem;color:var(--tl);padding:.1rem 0 .5rem}
+.sec-title{font-family:'Noto Serif KR',serif;font-size:.82rem;font-weight:700;color:var(--navy);margin:.9rem 0 .4rem;padding-left:.55rem;border-left:3px solid var(--gold)}
+.law-rows{display:flex;flex-direction:column;gap:.38rem}
+.law-row{background:var(--white);border:1px solid var(--cream2);border-radius:9px;padding:.7rem .85rem;display:flex;align-items:center;gap:.65rem;cursor:pointer;transition:all .15s;position:relative}
+.law-row:active{transform:scale(.985);background:var(--cream)}
+.law-row.saved{border-color:rgba(201,168,76,.45)}
+.lemoji{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
+.linfo{flex:1;min-width:0}
+.lname{font-size:.85rem;font-weight:500;color:var(--td);line-height:1.35}
+.lsub{font-size:.7rem;color:var(--tl);margin-top:1px}
+.lstar{color:var(--gold);font-size:.85rem;flex-shrink:0}
+.no-res{text-align:center;padding:3rem 1rem;color:var(--tl);font-size:.87rem}
+
+/* ── LAW DETAIL PAGE ── */
+.det-header{background:var(--navy);padding:.9rem 1rem;flex-shrink:0}
+.det-tag{font-size:.7rem;color:rgba(255,255,255,.5);margin-bottom:.3rem}
+.det-name{font-family:'Noto Serif KR',serif;font-size:1rem;font-weight:700;color:var(--gold2);line-height:1.4}
+
+.det-actions{background:var(--white);padding:.65rem .9rem;border-bottom:1px solid var(--cream2);display:flex;gap:.45rem;flex-wrap:wrap;flex-shrink:0}
+.abt{background:var(--cream);border:1px solid var(--cream2);border-radius:7px;padding:.45rem .7rem;font-size:.75rem;cursor:pointer;color:var(--td);display:flex;align-items:center;gap:.3rem;transition:all .15s;text-decoration:none;white-space:nowrap}
+.abt:active{opacity:.7}
+.abt.navy{background:var(--navy);color:#fff;border-color:var(--navy)}
+.abt.gold{border:1.5px solid var(--gold);color:var(--gold);background:none}
+.abt.gold.saved{background:var(--gold);color:var(--navy)}
+
+/* ── ARTICLE SEARCH ── */
+.art-search{padding:.6rem .9rem;background:var(--cream);border-bottom:1px solid var(--cream2);flex-shrink:0}
+.art-search input{width:100%;background:var(--white);border:1px solid var(--cream2);border-radius:8px;padding:.5rem .8rem;font-size:.83rem;outline:none;font-family:'Noto Sans KR',sans-serif;color:var(--td)}
+.art-search input:focus{border-color:var(--navy)}
+
+/* ── TOC ── */
+.toc-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:.7rem .9rem 1rem}
+
+/* loading */
+.loading{text-align:center;padding:2.5rem 1rem}
+.spinner{width:32px;height:32px;border:3px solid var(--cream2);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{font-size:.83rem;color:var(--tl)}
+
+/* article cards */
+.chapter-label{font-size:.75rem;font-weight:700;color:var(--navy);background:var(--cream2);padding:.35rem .7rem;border-radius:6px;margin:.8rem 0 .4rem;display:inline-block}
+.art-card{background:var(--white);border:1px solid var(--cream2);border-radius:9px;margin-bottom:.4rem;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.art-card.open{border-color:var(--navy2)}
+.art-card-head{padding:.65rem .9rem;display:flex;align-items:center;gap:.6rem}
+.art-num{font-size:.75rem;font-weight:700;color:var(--gold);min-width:52px;flex-shrink:0}
+.art-ttl{font-size:.84rem;font-weight:500;color:var(--td);flex:1;line-height:1.35}
+.art-arr{font-size:.7rem;color:var(--tl);transition:transform .2s;flex-shrink:0}
+.art-card.open .art-arr{transform:rotate(180deg)}
+
+.art-body{display:none;padding:.1rem .9rem .85rem;border-top:1px solid var(--cream2)}
+.art-card.open .art-body{display:block}
+.art-content{font-size:.82rem;line-height:1.8;color:var(--tm);white-space:pre-wrap;word-break:keep-all}
+.art-loading{padding:.8rem 0;text-align:center;font-size:.78rem;color:var(--tl)}
+.art-para{margin-bottom:.5rem}
+.art-para:last-child{margin-bottom:0}
+.hang{color:var(--td)}
+.ho{padding-left:1.2em;color:var(--tm)}
+.mok{padding-left:2.2em;color:var(--tl)}
+.art-note{font-size:.72rem;color:var(--tl);margin-top:.5rem;padding-top:.5rem;border-top:1px dashed var(--cream2)}
+
+/* search highlight */
+.hl{background:#fff3cd;border-radius:2px}
+
+/* ── SAVED PAGE ── */
+.saved-top{background:var(--white);padding:.85rem 1rem;border-bottom:1px solid var(--cream2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.saved-top h2{font-family:'Noto Serif KR',serif;font-size:.95rem;color:var(--navy)}
+.clr-btn{background:none;border:1px solid #ddd;color:var(--tl);border-radius:6px;padding:.28rem .65rem;font-size:.73rem;cursor:pointer}
+.empty{text-align:center;padding:3rem 2rem;color:var(--tl)}
+.empty .ei{font-size:2.5rem;margin-bottom:.7rem}
+.empty p{font-size:.83rem;line-height:1.7}
+
+/* ── BOTTOM NAV ── */
+.bnav{display:flex;background:var(--white);border-top:1px solid var(--cream2);flex-shrink:0;box-shadow:0 -2px 10px rgba(0,0,0,.06)}
+.bn{flex:1;background:none;border:none;padding:.55rem 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.67rem;color:var(--tl);font-family:'Noto Sans KR',sans-serif;transition:color .15s}
+.bn .bi{font-size:1.2rem}
+.bn.on{color:var(--navy);font-weight:700}
+.bbadge{background:var(--gold);color:var(--navy);font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:8px;display:none;margin-top:-2px}
+
+/* subject colors */
+.c-l1{background:#e8f0fe;color:#1a73e8}
+.c-l2{background:#e6f4ea;color:#188038}
+.c-so{background:#fce8e6;color:#c5221f}
+.c-ci{background:#fef7e0;color:#b06000}
+.c-ad{background:#f3e8fd;color:#7b1fa2}
+.c-ot{background:#f1f3f4;color:#444}
+
+/* install banner */
+.install-banner{background:linear-gradient(90deg,var(--navy2),var(--navy3));color:#fff;padding:.6rem .9rem;display:flex;align-items:center;gap:.6rem;flex-shrink:0}
+.install-banner p{font-size:.75rem;flex:1;color:rgba(255,255,255,.9);line-height:1.4}
+.inst-btn{background:var(--gold);color:var(--navy);border:none;border-radius:6px;padding:.35rem .7rem;font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.inst-x{background:none;border:none;color:rgba(255,255,255,.4);font-size:1rem;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- INSTALL BANNER -->
+<div class="install-banner" id="install-banner" style="display:none">
+  <p>📲 홈 화면에 추가하면 앱처럼 사용 가능!</p>
+  <button class="inst-btn" id="inst-btn">설치</button>
+  <button class="inst-x" onclick="hideBanner()">✕</button>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="hdr-main">
+    <button class="hdr-back" id="hdr-back" onclick="goBack()">←</button>
+    <div style="flex:1">
+      <div class="hdr-title" id="hdr-title">⚖️ 노무사 법령 조문</div>
+      <div class="hdr-sub" id="hdr-sub">공인노무사 시험 출제범위 법령</div>
+    </div>
+  </div>
+  <div class="search-wrap" id="search-wrap">
+    <div class="search-inner">
+      <span class="si">🔍</span>
+      <input type="search" id="q" placeholder="법령명 검색…" oninput="onQ(this.value)" autocomplete="off"/>
+      <span class="sx" id="qx" onclick="clearQ()">✕</span>
+    </div>
+  </div>
+</header>
+
+<!-- FILTER -->
+<div class="filter-row" id="filter-row"></div>
+
+<!-- PAGE: LIST -->
+<div class="page on" id="pg-list">
+  <div class="list-wrap" id="law-list"></div>
+</div>
+
+<!-- PAGE: DETAIL -->
+<div class="page" id="pg-detail">
+  <div class="det-header" id="det-header"></div>
+  <div class="det-actions" id="det-actions"></div>
+  <div class="art-search">
+    <input type="search" id="art-q" placeholder="조문 내 검색 (예: 해고, 임금)" oninput="filterArticles(this.value)" autocomplete="off"/>
+  </div>
+  <div class="toc-wrap" id="toc-wrap"></div>
+</div>
+
+<!-- PAGE: SAVED -->
+<div class="page" id="pg-saved">
+  <div class="saved-top">
+    <h2>🔖 저장한 법령</h2>
+    <button class="clr-btn" onclick="clearAll()">전체 삭제</button>
+  </div>
+  <div class="list-wrap" id="saved-list"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <button class="bn on" id="bn-list" onclick="navTo('list')">
+    <span class="bi">⚖️</span>법령 목록
+  </button>
+  <button class="bn" id="bn-saved" onclick="navTo('saved')">
+    <span class="bi">🔖</span>저장 목록
+    <span class="bbadge" id="badge">0</span>
+  </button>
+</nav>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+const SUBJ = {
+  l1:{label:'노동법Ⅰ · 개별적 노사관계', em:'👷', cls:'c-l1'},
+  l2:{label:'노동법Ⅱ · 집단적 노사관계', em:'🤝', cls:'c-l2'},
+  so:{label:'사회보험법', em:'🏥', cls:'c-so'},
+  ci:{label:'민법 · 민사소송법', em:'⚖️', cls:'c-ci'},
+  ad:{label:'행정법 · 행정쟁송', em:'🏛️', cls:'c-ad'},
+  ot:{label:'기타 관련 법령', em:'📜', cls:'c-ot'},
+};
+
+const LAWS = [
+  // 노동법 Ⅰ
+  {id:'근로기준법',           name:'근로기준법',                                     s:'l1', desc:'근로조건의 기준을 정하여 근로자의 기본적 생활을 보장·향상시키는 핵심 노동법입니다.'},
+  {id:'최저임금법',           name:'최저임금법',                                     s:'l1', desc:'근로자에 대하여 임금의 최저수준을 보장하는 법률입니다.'},
+  {id:'근로자퇴직급여 보장법', name:'근로자퇴직급여 보장법',                          s:'l1', desc:'퇴직급여제도의 설정·운영에 관한 사항을 규정한 법률입니다.'},
+  {id:'기간제및단시간근로자보호법', name:'기간제 및 단시간근로자 보호 등에 관한 법률', s:'l1', desc:'기간제·단시간 근로자 차별시정 및 근로조건 보호 법률입니다.'},
+  {id:'파견근로자보호법',     name:'파견근로자 보호 등에 관한 법률',                 s:'l1', desc:'근로자 파견사업 운영 및 파견근로자 보호 법률입니다.'},
+  {id:'남녀고용평등법',       name:'남녀고용평등과 일·가정 양립 지원에 관한 법률',   s:'l1', desc:'고용에서 남녀 평등 기회 보장, 모성보호 및 일·가정 양립 지원 법률입니다.'},
+  {id:'직업안정법',           name:'직업안정법',                                     s:'l1', desc:'직업소개·직업지도 및 고용기회 제공에 관한 법률입니다.'},
+  {id:'고용정책기본법',       name:'고용정책 기본법',                                s:'l1', desc:'국가 고용정책의 기본 사항을 규정한 기본법입니다.'},
+  {id:'근로자직업능력개발법', name:'근로자직업능력 개발법',                           s:'l1', desc:'직업능력개발훈련에 관한 사항을 규정한 법률입니다.'},
+  {id:'산업안전보건법',       name:'산업안전보건법',                                 s:'l1', desc:'산업재해 예방 및 쾌적한 작업환경 조성을 위한 법률입니다.'},
+  {id:'외국인근로자고용법',   name:'외국인근로자의 고용 등에 관한 법률',             s:'l1', desc:'외국인근로자 도입·관리에 관한 법률입니다.'},
+  {id:'임금채권보장법',       name:'임금채권보장법',                                 s:'l1', desc:'사업주 도산 시 체불 임금 국가 대지급 보장 법률입니다.'},
+  // 노동법 Ⅱ
+  {id:'노동조합및노동관계조정법', name:'노동조합 및 노동관계조정법',                 s:'l2', desc:'단결권·단체교섭권·단체행동권을 보장하는 핵심 집단적 노사관계 법률입니다.'},
+  {id:'노동위원회법',         name:'노동위원회법',                                   s:'l2', desc:'노동위원회의 설치·구성·운영에 관한 법률입니다.'},
+  {id:'공무원노조법',         name:'공무원의 노동조합 설립 및 운영 등에 관한 법률',  s:'l2', desc:'공무원의 노동조합 결성 및 단체교섭에 관한 법률입니다.'},
+  {id:'교원노조법',           name:'교원의 노동조합 설립 및 운영 등에 관한 법률',    s:'l2', desc:'교원의 노동조합 결성 및 단체교섭에 관한 법률입니다.'},
+  {id:'근로자참여협력법',     name:'근로자참여 및 협력증진에 관한 법률',             s:'l2', desc:'노사협의회 구성·운영 및 근로자 경영참여에 관한 법률입니다.'},
+  // 사회보험
+  {id:'산재보험법',           name:'산업재해보상보험법',                             s:'so', desc:'업무상 재해 보상 및 재활 촉진을 위한 사회보험법입니다.'},
+  {id:'고용보험법',           name:'고용보험법',                                     s:'so', desc:'실업 예방, 고용촉진, 실업급여 지급에 관한 사회보험법입니다.'},
+  {id:'보험료징수법',         name:'고용보험 및 산업재해보상보험의 보험료징수 등에 관한 법률', s:'so', desc:'고용·산재보험 보험료 징수·부과를 통합 규정한 법률입니다.'},
+  {id:'국민연금법',           name:'국민연금법',                                     s:'so', desc:'노령·장애·사망에 대한 연금급여를 실시하는 사회보험법입니다.'},
+  {id:'국민건강보험법',       name:'국민건강보험법',                                 s:'so', desc:'질병·부상에 대한 보험급여를 실시하는 사회보험법입니다.'},
+  {id:'노인장기요양보험법',   name:'노인장기요양보험법',                             s:'so', desc:'노인에게 요양급여를 제공하는 사회보험법입니다.'},
+  // 민법·민사소송법
+  {id:'민법',                 name:'민법 (총칙·채권)',                               s:'ci', desc:'사법의 일반법. 시험 범위: 민법총칙·채권법.'},
+  {id:'민사소송법',           name:'민사소송법 (1차 선택)',                          s:'ci', desc:'민사분쟁 해결을 위한 재판절차를 규정한 법률(1차 선택과목).'},
+  // 행정법
+  {id:'행정기본법',           name:'행정기본법',                                     s:'ad', desc:'행정의 원칙·기준 및 국민 권리보호의 기본사항을 규정한 법률입니다.'},
+  {id:'행정절차법',           name:'행정절차법',                                     s:'ad', desc:'행정청의 처분·신고 등 행정작용 절차에 관한 기본법입니다.'},
+  {id:'행정심판법',           name:'행정심판법',                                     s:'ad', desc:'위법·부당한 행정처분에 대한 행정심판 절차 법률입니다.'},
+  {id:'행정소송법',           name:'행정소송법',                                     s:'ad', desc:'위법한 행정처분에 대한 법원 소송절차를 규정한 법률입니다.'},
+  {id:'국가공무원법',         name:'국가공무원법 · 지방공무원법',                    s:'ad', desc:'공무원 임용·복무·권리·의무·징계에 관한 기본 법률입니다.'},
+  // 기타
+  {id:'공인노무사법',         name:'공인노무사법',                                   s:'ot', desc:'공인노무사의 자격·직무·권리·의무에 관한 법률입니다.'},
+  {id:'장애인고용촉진법',     name:'장애인고용촉진 및 직업재활법',                   s:'ot', desc:'장애인의 고용촉진과 직업재활을 위한 법률입니다.'},
+  {id:'고령자고용촉진법',     name:'고용상 연령차별금지 및 고령자고용촉진에 관한 법률', s:'ot', desc:'연령차별 금지 및 고령자 고용 의무에 관한 법률입니다.'},
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let saved = JSON.parse(localStorage.getItem('nomu3_saved')||'[]');
+let curFilter = 'all';
+let curPage = 'list'; // list | detail | saved
+let curLaw = null;
+let articlesCache = {}; // law.id → articles[]
+let artQ = '';
+let deferredPrompt = null;
+
+// ═══════════════════════════════════════════
+// PWA
+// ═══════════════════════════════════════════
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault(); deferredPrompt = e;
+  if(!localStorage.getItem('inst-done')) document.getElementById('install-banner').style.display='flex';
+});
+document.getElementById('inst-btn').addEventListener('click', async()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const {outcome} = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  hideBanner();
+  if(outcome==='accepted') localStorage.setItem('inst-done','1');
+});
+function hideBanner(){document.getElementById('install-banner').style.display='none'; localStorage.setItem('inst-done','1');}
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+function init(){renderFilters(); renderList(); updateBadge();}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+function showPage(p){
+  ['pg-list','pg-detail','pg-saved'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  document.getElementById('pg-'+p).classList.add('on');
+  curPage = p;
+
+  const sw = document.getElementById('search-wrap');
+  const fr = document.getElementById('filter-row');
+  const back = document.getElementById('hdr-back');
+
+  if(p==='list'){
+    sw.style.display='block'; fr.style.display='flex'; back.classList.remove('show');
+    document.getElementById('hdr-title').textContent='⚖️ 노무사 법령 조문';
+    document.getElementById('hdr-sub').textContent='공인노무사 시험 출제범위 법령';
+    document.getElementById('bn-list').classList.add('on');
+    document.getElementById('bn-saved').classList.remove('on');
+  } else if(p==='detail'){
+    sw.style.display='none'; fr.style.display='none'; back.classList.add('show');
+    document.getElementById('bn-list').classList.add('on');
+    document.getElementById('bn-saved').classList.remove('on');
+  } else {
+    sw.style.display='none'; fr.style.display='none'; back.classList.remove('show');
+    document.getElementById('hdr-title').textContent='🔖 저장한 법령';
+    document.getElementById('hdr-sub').textContent='';
+    document.getElementById('bn-list').classList.remove('on');
+    document.getElementById('bn-saved').classList.add('on');
+  }
+}
+
+function navTo(p){
+  if(p==='saved'){renderSaved(); showPage('saved');}
+  else showPage('list');
+}
+function goBack(){
+  if(curPage==='detail') showPage('list');
+  else navTo('list');
+}
+
+// ═══════════════════════════════════════════
+// FILTERS & SEARCH
+// ═══════════════════════════════════════════
+function renderFilters(){
+  const fr = document.getElementById('filter-row');
+  const items = [{k:'all',label:'전체'},...Object.entries(SUBJ).map(([k,v])=>({k,label:v.label.split('·')[0].trim()}))];
+  fr.innerHTML = items.map(i=>`<button class="chip ${i.k===curFilter?'on':''}" onclick="setFilter('${i.k}')">${i.label}</button>`).join('');
+}
+function setFilter(f){curFilter=f; renderFilters(); renderList();}
+function onQ(v){
+  document.getElementById('qx').style.display = v?'block':'none';
+  renderList();
+}
+function clearQ(){document.getElementById('q').value=''; document.getElementById('qx').style.display='none'; renderList();}
+
+// ═══════════════════════════════════════════
+// LAW LIST
+// ═══════════════════════════════════════════
+function renderList(){
+  const q = (document.getElementById('q').value||'').toLowerCase();
+  const wrap = document.getElementById('law-list');
+  const grouped={};
+  LAWS.forEach(l=>{
+    if(curFilter!=='all' && l.s!==curFilter) return;
+    if(q && !l.name.toLowerCase().includes(q) && !l.desc.toLowerCase().includes(q)) return;
+    if(!grouped[l.s]) grouped[l.s]=[];
+    grouped[l.s].push(l);
+  });
+  const total = Object.values(grouped).flat().length;
+  if(!total){wrap.innerHTML='<div class="no-res">🔍 검색 결과가 없습니다</div>'; return;}
+  wrap.innerHTML = `<div class="count">총 ${total}개 법령</div>`+
+    Object.entries(grouped).map(([sk,ls])=>{
+      const s=SUBJ[sk];
+      return `<div class="sec-title">${s.em} ${s.label}</div>
+      <div class="law-rows">${ls.map(l=>`
+        <div class="law-row ${saved.includes(l.id)?'saved':''}" onclick="openDetail('${l.id}')">
+          <div class="lemoji ${s.cls}">${s.em}</div>
+          <div class="linfo"><div class="lname">${l.name}</div><div class="lsub">${s.label}</div></div>
+          ${saved.includes(l.id)?'<span class="lstar">★</span>':''}
+        </div>`).join('')}</div>`;
+    }).join('');
+}
+
+// ═══════════════════════════════════════════
+// DETAIL PAGE
+// ═══════════════════════════════════════════
+async function openDetail(id){
+  curLaw = LAWS.find(l=>l.id===id);
+  if(!curLaw) return;
+  artQ = '';
+  document.getElementById('art-q').value='';
+  showPage('detail');
+
+  const s = SUBJ[curLaw.s];
+  document.getElementById('hdr-title').textContent = curLaw.name;
+  document.getElementById('hdr-sub').textContent = s.label;
+
+  // header
+  document.getElementById('det-header').innerHTML=`
+    <div class="det-tag">${s.em} ${s.label}</div>
+    <div class="det-name">${curLaw.name}</div>`;
+
+  // actions
+  renderActions();
+
+  // articles
+  await loadArticles();
+}
+
+function renderActions(){
+  const isSaved = saved.includes(curLaw.id);
+  const nm = curLaw.name.replace(' (총칙·채권)','').replace(' (1차 선택)','');
+  const enc = encodeURIComponent(nm);
+  document.getElementById('det-actions').innerHTML=`
+    <a class="abt navy" href="https://www.law.go.kr/lsSc.do?query=${enc}" target="_blank">📋 법령 전문</a>
+    <a class="abt" href="https://www.law.go.kr/lsSc.do?query=${encodeURIComponent(nm+' 시행령')}" target="_blank">📎 시행령</a>
+    <a class="abt" href="https://www.law.go.kr/lsSc.do?query=${encodeURIComponent(nm+' 시행규칙')}" target="_blank">📄 시행규칙</a>
+    <button class="abt gold ${isSaved?'saved':''}" onclick="toggleSave()">
+      ${isSaved?'★ 저장됨':'🔖 저장'}
+    </button>`;
+}
+
+// ═══════════════════════════════════════════
+// ARTICLES — Claude API
+// ═══════════════════════════════════════════
+async function loadArticles(){
+  const wrap = document.getElementById('toc-wrap');
+
+  if(articlesCache[curLaw.id]){
+    renderTOC(articlesCache[curLaw.id]);
+    return;
+  }
+
+  wrap.innerHTML=`<div class="loading"><div class="spinner"></div><p>조문을 불러오는 중입니다…<br><small style="color:#aaa">AI가 법령 조문을 구성하고 있습니다</small></p></div>`;
+
+  try {
+    const articles = await fetchArticlesFromClaude(curLaw);
+    articlesCache[curLaw.id] = articles;
+    renderTOC(articles);
+  } catch(e){
+    wrap.innerHTML=`<div class="no-res">⚠️ 조문을 불러오지 못했습니다.<br><small>${e.message}</small></div>`;
+  }
+}
+
+async function fetchArticlesFromClaude(law){
+  const prompt = `당신은 대한민국 법령 데이터베이스입니다. "${law.name}"의 전체 조문 목록을 JSON으로 반환하세요.
+
+반드시 아래 JSON 배열 형식만 반환하세요. 마크다운 없이 순수 JSON만 출력:
+[
+  {
+    "num": "제1조",
+    "title": "목적",
+    "content": "이 법은 … 목적으로 한다.",
+    "paras": [
+      {"hang": "①", "text": "항 내용", "hos": [{"ho": "1.", "text": "호 내용", "moks": [{"mok": "가.", "text": "목 내용"}]}]}
+    ]
+  }
+]
+
+규칙:
+- num: 조 번호 (제1조, 제2조의2 등)
+- title: 조문 제목 (없으면 "")  
+- content: 조 본문 (단독 조문이면 여기에, 항이 있으면 "")
+- paras: 항 배열 (없으면 [])
+- 현행 ${law.name} 전체 조문을 빠짐없이 포함할 것
+- 조문 내용은 현행 법령과 정확히 일치하도록 최대한 상세하게 작성
+- 약칭이 있는 경우 공식 약칭 사용 가능`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:8000,
+      system:'당신은 대한민국 법령 전문가입니다. 요청받은 법령의 정확한 조문을 JSON으로만 반환합니다.',
+      messages:[{role:'user', content:prompt}]
+    })
+  });
+
+  if(!res.ok) throw new Error(`API 오류: ${res.status}`);
+  const data = await res.json();
+  const text = data.content.map(c=>c.text||'').join('');
+
+  // JSON 파싱
+  let json = text.trim();
+  const m = json.match(/\[[\s\S]*\]/);
+  if(m) json = m[0];
+  return JSON.parse(json);
+}
+
+// ═══════════════════════════════════════════
+// RENDER TOC
+// ═══════════════════════════════════════════
+function renderTOC(articles){
+  const wrap = document.getElementById('toc-wrap');
+  const q = artQ.toLowerCase();
+
+  const filtered = q
+    ? articles.filter(a=>
+        a.num.includes(q)||
+        (a.title||'').includes(q)||
+        (a.content||'').toLowerCase().includes(q)||
+        JSON.stringify(a.paras||'').toLowerCase().includes(q)
+      )
+    : articles;
+
+  if(!filtered.length){
+    wrap.innerHTML='<div class="no-res">검색 결과가 없습니다</div>';
+    return;
+  }
+
+  wrap.innerHTML = `<div class="count" style="padding:.1rem 0 .5rem">총 ${filtered.length}개 조문</div>`+
+    filtered.map((a,i)=>`
+      <div class="art-card" id="art-${i}" onclick="toggleArt(${i})">
+        <div class="art-card-head">
+          <span class="art-num">${hl(a.num,q)}</span>
+          <span class="art-ttl">${hl(a.title||'(제목 없음)',q)}</span>
+          <span class="art-arr">▼</span>
+        </div>
+        <div class="art-body">
+          <div class="art-content">${formatContent(a, q)}</div>
+        </div>
+      </div>`).join('');
+}
+
+function toggleArt(i){
+  const card = document.getElementById('art-'+i);
+  card.classList.toggle('open');
+}
+
+function formatContent(a, q){
+  let out = '';
+  if(a.content) out += `<div class="art-para">${hl(a.content, q)}</div>`;
+  if(a.paras && a.paras.length){
+    a.paras.forEach(p=>{
+      out += `<div class="art-para"><span class="hang">${p.hang} </span>${hl(p.text,q)}</div>`;
+      if(p.hos) p.hos.forEach(h=>{
+        out += `<div class="ho">${h.ho} ${hl(h.text,q)}</div>`;
+        if(h.moks) h.moks.forEach(m=>{
+          out += `<div class="mok">${m.mok} ${hl(m.text,q)}</div>`;
+        });
+      });
+    });
+  }
+  return out || '(내용 없음)';
+}
+
+function hl(text, q){
+  if(!q || !text) return text||'';
+  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+  return String(text).replace(re, m=>`<mark class="hl">${m}</mark>`);
+}
+
+function filterArticles(q){
+  artQ = q;
+  if(articlesCache[curLaw?.id]) renderTOC(articlesCache[curLaw.id]);
+}
+
+// ═══════════════════════════════════════════
+// SAVE
+// ═══════════════════════════════════════════
+function toggleSave(){
+  if(!curLaw) return;
+  const idx = saved.indexOf(curLaw.id);
+  if(idx===-1) saved.push(curLaw.id);
+  else saved.splice(idx,1);
+  localStorage.setItem('nomu3_saved', JSON.stringify(saved));
+  updateBadge();
+  renderActions();
+  renderList();
+}
+
+function updateBadge(){
+  const b = document.getElementById('badge');
+  b.textContent = saved.length;
+  b.style.display = saved.length?'inline':'none';
+}
+
+function renderSaved(){
+  const wrap = document.getElementById('saved-list');
+  const laws = LAWS.filter(l=>saved.includes(l.id));
+  if(!laws.length){
+    wrap.innerHTML=`<div class="empty"><div class="ei">🔖</div><p>저장한 법령이 없습니다.<br>법령 목록에서 저장해 보세요.</p></div>`;
+    return;
+  }
+  const grouped={};
+  laws.forEach(l=>{if(!grouped[l.s]) grouped[l.s]=[]; grouped[l.s].push(l);});
+  wrap.innerHTML = `<div class="count">총 ${laws.length}개</div>`+
+    Object.entries(grouped).map(([sk,ls])=>{
+      const s=SUBJ[sk];
+      return `<div class="sec-title">${s.em} ${s.label}</div>
+      <div class="law-rows">${ls.map(l=>`
+        <div class="law-row saved" onclick="openDetail('${l.id}')">
+          <div class="lemoji ${s.cls}">${s.em}</div>
+          <div class="linfo"><div class="lname">${l.name}</div><div class="lsub">${s.label}</div></div>
+          <span class="lstar">★</span>
+        </div>`).join('')}</div>`;
+    }).join('');
+}
+
+function clearAll(){
+  if(!confirm('저장한 법령을 모두 삭제할까요?')) return;
+  saved=[]; localStorage.setItem('nomu3_saved',JSON.stringify(saved));
+  updateBadge(); renderSaved(); renderList();
+}
+
+// ═══════════════════════════════════════════
+init();
+</script>
+</body>
+</html>

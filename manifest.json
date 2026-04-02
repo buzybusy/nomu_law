@@ -1,0 +1,15 @@
+{
+  "name": "공인노무사 법령 조문",
+  "short_name": "노무사 법령",
+  "description": "공인노무사 시험 출제범위 법령 조문 검색 앱",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d1f3c",
+  "theme_color": "#0d1f3c",
+  "orientation": "portrait",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
